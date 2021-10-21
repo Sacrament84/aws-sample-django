@@ -56,6 +56,7 @@ jobs:
           id: task-def
           uses: aws-actions/amazon-ecs-render-task-definition@v1
           with:
+            environment-variables: "DATABASE_URL=${{ secrets.DB_DEV }}"
             task-definition: task-definition.json
             container-name: dev-django
             image: ${{ steps.build-image.outputs.image }}
@@ -63,7 +64,6 @@ jobs:
         - name: Deploy Amazon ECS task definition
           uses: aws-actions/amazon-ecs-deploy-task-definition@v1
           with:
-            environment-variables: "DATABASE_URL=${{ secrets.DB_DEV }}"
             task-definition: ${{ steps.task-def.outputs.task-definition }}
             cluster: django-dev
             wait-for-service-stability: true        
