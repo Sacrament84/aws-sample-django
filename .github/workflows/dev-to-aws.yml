@@ -70,4 +70,5 @@ jobs:
           with:
             task-definition: ${{ steps.task-def.outputs.task-definition }}
             cluster: django-dev
-            wait-for-service-stability: "true"        
+            wait-for-service-stability: "true"   
+            #     
