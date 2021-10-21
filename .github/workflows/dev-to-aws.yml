@@ -49,6 +49,23 @@ jobs:
           run: |
              docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
              docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+             echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+        - name: Fill in the new image ID in the Amazon ECS task definition
+          id: task-def
+          uses: aws-actions/amazon-ecs-render-task-definition@v1
+          with:
+            task-definition: task-definition.json
+            container-name: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            image: ${{ steps.build-image.outputs.image }}
+
+        - name: Deploy Amazon ECS task definition
+          uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+          with:
+            environment-variables: "DATABASE_URL=${{ secrets.DB_DEV }}"
+            task-definition: ${{ steps.task-def.outputs.task-definition }}
+            cluster: django-dev
+            wait-for-service-stability: true        
 
         #- name: Create New Instance Template
         #  run: gcloud compute instance-templates create-with-container instance-template-${{ github.sha }} --tags=http-server --container-env=DATABASE_URL=${{ secrets.DB_URL }} --container-image=gcr.io/cloud-run-dev-328005/cloud-run-dev/v${{ github.sha }}:latest
