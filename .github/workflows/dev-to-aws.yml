@@ -27,15 +27,8 @@ jobs:
             aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
             aws-region: eu-north-1
 
-        - name: Login to Amazon ECR
-          id: login-ecr
-          uses: aws-actions/amazon-ecr-login@v1
-
         - name: Checkout repository
           uses: actions/checkout@v2
-        
-        #- name: Install Mysql Python Client
-        #  run: sudo apt-get update && sudo apt-get install -y python3-mysqldb 
 
         - name: Install req
           run: pip install -r requirements.txt
@@ -45,16 +38,19 @@ jobs:
         
         - name: Run Test
           run: (python manage.py test) || true
-          
-        - name: Build Docker image
-          env:
-            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-            ECR_REPOSITORY: my-ecr-repo
-            IMAGE_TAG: ${{ github.sha }}
-          run: docker build . -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-        - name: Push Docker image
-          run: docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        - name: Login to Amazon ECR
+          id: login-ecr
+          uses: aws-actions/amazon-ecr-login@v1
+          
+        - name: Build and Push Docker image
+          env:
+             ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+             ECR_REPOSITORY: django-dev
+             IMAGE_TAG: ${{ github.sha }}
+           run: |
+             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+             docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
         #- name: Create New Instance Template
         #  run: gcloud compute instance-templates create-with-container instance-template-${{ github.sha }} --tags=http-server --container-env=DATABASE_URL=${{ secrets.DB_URL }} --container-image=gcr.io/cloud-run-dev-328005/cloud-run-dev/v${{ github.sha }}:latest
