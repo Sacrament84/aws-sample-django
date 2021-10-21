@@ -63,4 +63,6 @@ jobs:
             task-definition: ${{ steps.task-def.outputs.task-definition }}
             service: django-prod
             cluster: django-dev
-            wait-for-service-stability: "true"
+            #wait-for-service-stability: "true"
+        - name: Force restart service
+          run:  aws ecs update-service --force-new-deployment --service django-prod --cluster django-dev
