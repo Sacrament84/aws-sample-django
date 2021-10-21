@@ -47,8 +47,9 @@ jobs:
              ECR_REPOSITORY: django-dev
              IMAGE_TAG: ${{ github.sha }}
           run: |
-             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --tag latest .
-             docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG --tag latest
+             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+             docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+             docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
         #- name: Create New Instance Template
         #  run: gcloud compute instance-templates create-with-container instance-template-${{ github.sha }} --tags=http-server --container-env=DATABASE_URL=${{ secrets.DB_URL }} --container-image=gcr.io/cloud-run-dev-328005/cloud-run-dev/v${{ github.sha }}:latest
