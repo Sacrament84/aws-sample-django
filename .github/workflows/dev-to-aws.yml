@@ -8,11 +8,14 @@ jobs:
 
     deploy:
     
-        name: Setup Gcloud Account
+        name: Setup AWS Account
         runs-on: ubuntu-latest
         env:
-          IMAGE_NAME: 626774426159.dkr.ecr.eu-north-1.amazonaws.com/django-dev/v${{ github.sha }}
+          #IMAGE_NAME: 626774426159.dkr.ecr.eu-north-1.amazonaws.com/django-dev/v${{ github.sha }}
           DEVELOPMENT_MODE: "True"
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: django-dev
+          IMAGE_TAG: ${{ github.sha }}
         steps:
 
         - name: Check Out Repo 
@@ -45,10 +48,10 @@ jobs:
           run: (python manage.py test) || true
           
         - name: Build Docker image
-          run: docker build . -t $IMAGE_NAME
+          run: docker build . -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
         - name: Push Docker image
-          run: docker push $IMAGE_NAME
+          run: docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
         #- name: Create New Instance Template
         #  run: gcloud compute instance-templates create-with-container instance-template-${{ github.sha }} --tags=http-server --container-env=DATABASE_URL=${{ secrets.DB_URL }} --container-image=gcr.io/cloud-run-dev-328005/cloud-run-dev/v${{ github.sha }}:latest
