@@ -1,0 +1,75 @@
+name: Build and push to AWS Staging branch
+
+on:
+  push:
+    branches: [ staging ]
+
+jobs:
+
+    deploy:
+    
+        name: Setup AWS Account
+        runs-on: ubuntu-latest
+        env:
+          DEVELOPMENT_MODE: "True"
+        steps:
+
+        - name: Check Out Repo 
+          uses: actions/checkout@v2
+        
+        - name: Configure AWS credentials
+          uses: aws-actions/configure-aws-credentials@v1
+          with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: eu-north-1
+
+        - name: Checkout repository
+          uses: actions/checkout@v2
+
+        - name: Install req
+          run: pip install -r requirements.txt
+
+        - name: Migrate
+          run: python manage.py migrate
+        
+        - name: Run Test
+          run: (python manage.py test) || true
+
+        - name: Login to Amazon ECR
+          id: login-ecr
+          uses: aws-actions/amazon-ecr-login@v1
+          
+        - name: Build and Push Docker image
+          id: build-image
+          env:
+             ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+             ECR_REPOSITORY: django-dev
+             IMAGE_TAG: ${{ github.sha }}
+          run: |
+             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+             docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+             echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+        - name: Download Task Definition
+          run: |
+             aws ecs describe-task-definition \
+             --task-definition dev-django2 \
+             --query taskDefinition > task-definition.json
+
+        - name: Fill in the new image ID in the Amazon ECS task definition
+          id: task-def
+          uses: aws-actions/amazon-ecs-render-task-definition@v1
+          with:
+            task-definition: task-definition.json
+            container-name: dev-django
+            image: ${{ steps.build-image.outputs.image }}
+
+        - name: Deploy Amazon ECS task definition
+          uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+          with:
+            task-definition: ${{ steps.task-def.outputs.task-definition }}
+            service: django-dev
+            cluster: django-dev
+            wait-for-service-stability: "true"   
+        #####END#####
