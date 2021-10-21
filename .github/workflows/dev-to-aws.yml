@@ -13,8 +13,6 @@ jobs:
         env:
           #IMAGE_NAME: 626774426159.dkr.ecr.eu-north-1.amazonaws.com/django-dev/v${{ github.sha }}
           DEVELOPMENT_MODE: "True"
-          ECR_REPOSITORY: django-dev
-          IMAGE_TAG: ${{ github.sha }}
         steps:
 
         - name: Check Out Repo 
@@ -48,7 +46,7 @@ jobs:
              ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
              ECR_REPOSITORY: django-dev
              IMAGE_TAG: ${{ github.sha }}
-           run: |
+          run: |
              docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
              docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
